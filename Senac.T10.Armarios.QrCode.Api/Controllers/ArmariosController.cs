@@ -54,12 +54,25 @@ namespace Senac.T10.Armarios.QrCode.Api.Controllers
         // PUT: api/Armarios/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutArmario(int id, Armario armario)
+        public async Task<IActionResult> PutArmario(int id, ArmarioUpdateRequest armarioRequest)
         {
-            if (id != armario.Id)
+            if (id != armarioRequest.Id)
             {
                 return BadRequest();
             }
+
+            var armario = await _context.Armarios.FindAsync(id);
+
+            if (armario == null)
+            {
+                return NotFound();
+            }
+            armario.Descricao = armarioRequest.Descricao;
+
+#pragma warning disable CS8601 // Possível atribuição de referência nula.
+            armario.QrCodeBase64 = armarioRequest.QrCodeBase64;
+#pragma warning restore CS8601 // Possível atribuição de referência nula.
+
 
             _context.Entry(armario).State = EntityState.Modified;
 
