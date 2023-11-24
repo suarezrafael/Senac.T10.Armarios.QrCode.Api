@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Senac.T10.Armarios.QrCode.Api.Data;
 
@@ -10,9 +11,10 @@ using Senac.T10.Armarios.QrCode.Api.Data;
 namespace Senac.T10.Armarios.QrCode.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20231124035935_Tabela_Armario")]
+    partial class Tabela_Armario
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -30,6 +32,7 @@ namespace Senac.T10.Armarios.QrCode.Api.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
                     b.Property<string>("Descricao")
+                        .IsRequired()
                         .HasMaxLength(900)
                         .HasColumnType("nvarchar(900)");
 
