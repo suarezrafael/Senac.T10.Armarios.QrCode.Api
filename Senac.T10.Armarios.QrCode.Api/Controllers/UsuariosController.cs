@@ -1,10 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Senac.T10.Armarios.QrCode.Api.Data;
 using Senac.T10.Armarios.QrCode.Api.Dtos;
 using Senac.T10.Armarios.QrCode.Api.Models;
@@ -137,8 +141,26 @@ namespace Senac.T10.Armarios.QrCode.Api.Controllers
                 // retorno HTTP 404 NotFound
                 return NotFound(usuario.Usuario);
             }
+
+            // Crie um token JWT
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.UTF8.GetBytes("3e8acfc238f45a314fd4b2bde272678ad30bd1774743a11dbc5c53ac71ca494b");
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new Claim[]
+                {
+                new Claim(ClaimTypes.Name, usr.Nome),
+                new Claim(ClaimTypes.NameIdentifier, usr.Id.ToString())
+                    // Adicione outras claims conforme necessário
+                }),
+                Expires = DateTime.UtcNow.AddHours(1), // Tempo de expiração do token
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            var tokenString = tokenHandler.WriteToken(token);
+
             // retorna HTTP 200 OK { "Nome": "Rafael", "username": "rafael"}
-            return Ok(new UsuarioResponse() { Id = usr.Id, Nome = usr.Nome, Usuario = usr.NomeUsuario });
+            return Ok(new UsuarioResponse() { Id = usr.Id, Nome = usr.Nome, Usuario = usr.NomeUsuario, Token = tokenString });
         }
         private bool UsuarioExists(int id)
         {
