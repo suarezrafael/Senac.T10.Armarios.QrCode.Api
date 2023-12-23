@@ -1,17 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Senac.T10.Armarios.QrCode.Api.Data;
 using Senac.T10.Armarios.QrCode.Api.Dtos;
+using Senac.T10.Armarios.QrCode.Api.Helper;
 using Senac.T10.Armarios.QrCode.Api.Models;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace Senac.T10.Armarios.QrCode.Api.Controllers
 {
@@ -20,20 +16,22 @@ namespace Senac.T10.Armarios.QrCode.Api.Controllers
     public class UsuariosController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IEmail _email;
 
-        public UsuariosController(AppDbContext context)
+        public UsuariosController(AppDbContext context, IEmail email)
         {
             _context = context;
+            _email = email;
         }
 
         // GET: api/Usuarios
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Usuario>>> GetUsuarios()
         {
-          if (_context.Usuarios == null)
-          {
-              return NotFound();
-          }
+            if (_context.Usuarios == null)
+            {
+                return NotFound();
+            }
             return await _context.Usuarios.ToListAsync();
         }
 
@@ -41,10 +39,10 @@ namespace Senac.T10.Armarios.QrCode.Api.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Usuario>> GetUsuario(int id)
         {
-          if (_context.Usuarios == null)
-          {
-              return NotFound();
-          }
+            if (_context.Usuarios == null)
+            {
+                return NotFound();
+            }
             var usuario = await _context.Usuarios.FindAsync(id);
 
             if (usuario == null)
@@ -91,10 +89,10 @@ namespace Senac.T10.Armarios.QrCode.Api.Controllers
         [HttpPost]
         public async Task<ActionResult<Usuario>> PostUsuario(Usuario usuario)
         {
-          if (_context.Usuarios == null)
-          {
-              return Problem("Entity set 'AppDbContext.Usuarios'  is null.");
-          }
+            if (_context.Usuarios == null)
+            {
+                return Problem("Entity set 'AppDbContext.Usuarios'  is null.");
+            }
             _context.Usuarios.Add(usuario);
             await _context.SaveChangesAsync();
 
@@ -161,6 +159,41 @@ namespace Senac.T10.Armarios.QrCode.Api.Controllers
 
             // retorna HTTP 200 OK { "Nome": "Rafael", "username": "rafael"}
             return Ok(new UsuarioResponse() { Id = usr.Id, Nome = usr.Nome, Usuario = usr.NomeUsuario, Token = tokenString });
+        }
+
+        // POST: api/Usuarios/RedefinirSenha
+        [HttpPost("RedefinirSenha")]
+        public async Task<ActionResult<UsuarioResponse>> RedefinirSenha(RedefinirSenhaRequest usuario)
+        {
+            // consultar usuario na base 
+            //  SELECT TOP(1) * FROM usuarios
+            //  WHERE usuario.Username LIKE 'rafael@hotmail.com'
+            //  AND usuario.Email = '123'
+            // buscar o usuario pelo username, senha e ativo = true
+            var usr = await _context.Usuarios.Where(w =>
+                w.NomeUsuario.Equals(usuario.Usuario) &&
+                w.Email.Equals(usuario.Email))
+                .FirstOrDefaultAsync();
+            // verifica se usuario do banco está nulo
+            if (usr == null)
+            {
+                // retorno HTTP 404 NotFound
+                return NotFound(usuario.Usuario);
+            }
+            string novaSenha = Guid.NewGuid().ToString().Substring(0, 8);
+            string mensagem = $"{usr.Nome}. Sua nova senha é: {novaSenha}";
+
+            bool emailEnviado = _email.Enviar(usr.Email, "Sistema Armarios QrCode/Nova senha", mensagem);
+            if (emailEnviado)
+            {
+                // retorna HTTP 200 OK { "Nome": "Rafael", "username": "rafael"}
+                return Ok(new RedefinirSenhaResponse() { Usuario = usr.NomeUsuario, Mensagem = "Senha enviado para seu email." });
+            }
+            else
+            {
+                return BadRequest("Erro ao enviar email");
+            }
+
         }
         private bool UsuarioExists(int id)
         {

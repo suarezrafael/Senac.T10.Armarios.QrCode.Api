@@ -16,7 +16,8 @@ namespace Senac.T10.Armarios.QrCode.Api.Models
         [StringLength(150)]
         public string NomeUsuario { get; set; }
 
-
+        [StringLength(200)]
+        public string Email { get; set; }
 
         [StringLength(200)]
         public string Senha { get; set; }

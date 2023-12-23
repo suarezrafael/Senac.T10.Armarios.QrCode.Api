@@ -1,13 +1,17 @@
-using Microsoft.EntityFrameworkCore;
-using Senac.T10.Armarios.QrCode.Api.Data;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using System.Text;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Senac.T10.Armarios.QrCode.Api.Data;
+using Senac.T10.Armarios.QrCode.Api.Helper;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
+builder.Services.AddScoped<IEmail, Email>();
+
 var conexao = builder.Configuration.GetConnectionString("conexao");
 builder.Services.AddDbContext<AppDbContext>(opcoes =>
 {
@@ -26,7 +30,8 @@ var chaveSecreta = new SymmetricSecurityKey(chaveSecretaBytes);
 var credenciais = new SigningCredentials(chaveSecreta, SecurityAlgorithms.HmacSha256);
 
 // Configuração da autenticação JWT
-builder.Services.AddAuthentication(opt => {
+builder.Services.AddAuthentication(opt =>
+{
     opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
@@ -38,7 +43,7 @@ builder.Services.AddAuthentication(opt => {
               ValidateAudience = false,
               ValidateLifetime = true,
               ValidateIssuerSigningKey = false,
-              
+
               IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("3e8acfc238f45a314fd4b2bde272678ad30bd1774743a11dbc5c53ac71ca494b"))
           };
       });
@@ -80,8 +85,8 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 
-    app.UseSwagger();
-    app.UseSwaggerUI();
+app.UseSwagger();
+app.UseSwaggerUI();
 
 
 app.UseHttpsRedirection();
