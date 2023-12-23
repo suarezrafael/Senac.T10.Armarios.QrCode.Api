@@ -186,7 +186,26 @@ namespace Senac.T10.Armarios.QrCode.Api.Controllers
             bool emailEnviado = _email.Enviar(usr.Email, "Sistema Armarios QrCode/Nova senha", mensagem);
             if (emailEnviado)
             {
-                // retorna HTTP 200 OK { "Nome": "Rafael", "username": "rafael"}
+                // gravar a nova senha no banco de dados
+                usr.Senha = novaSenha;
+                _context.Entry(usr).State = EntityState.Modified;
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!UsuarioExists(usr.Id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                // retorna HTTP 200 OK { "Usuario": "Rafael", "Mensagem": "rafael"}
                 return Ok(new RedefinirSenhaResponse() { Usuario = usr.NomeUsuario, Mensagem = "Senha enviado para seu email." });
             }
             else
